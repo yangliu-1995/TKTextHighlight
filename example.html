@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TKTextHighlight 示例</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .control-panel {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      position: sticky;
+      top: 20px;
+      height: fit-content;
+    }
+    .content-panel {
+      background: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    h1 {
+      text-align: center;
+      grid-column: 1 / -1;
+    }
+    .input-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.secondary {
+      background: #6c757d;
+    }
+    button.secondary:hover {
+      background: #545b62;
+    }
+    button.danger {
+      background: #dc3545;
+    }
+    button.danger:hover {
+      background: #c82333;
+    }
+    .example-text {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+    }
+    .example-text p {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>TKTextHighlight 示例（性能优化版）</h1>
+  
+  <div class="container">
+    <div class="control-panel">
+      <h2>控制面板</h2>
+      
+      <div class="input-group">
+        <label for="searchText">搜索文本：</label>
+        <input type="text" id="searchText" placeholder="输入要高亮的文本" value="JavaScript">
+      </div>
+      
+      <div class="input-group">
+        <label for="searchIndex">匹配索引（第几个）：</label>
+        <input type="number" id="searchIndex" placeholder="从0开始" value="0" min="0">
+      </div>
+      
+      <button onclick="doHighlight()">🔍 高亮文本</button>
+      
+      <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+      
+      <div class="input-group">
+        <label for="markStart">标记起始位置：</label>
+        <input type="number" id="markStart" placeholder="在高亮文本中的位置" value="0" min="0">
+      </div>
+      
+      <div class="input-group">
+        <label for="markLength">标记长度：</label>
+        <input type="number" id="markLength" placeholder="标记的字符数" value="4" min="1">
+      </div>
+      
+      <button class="secondary" onclick="doMark()">✨ 标记范围</button>
+      
+      <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+      
+      <button class="danger" onclick="doClear()">🗑️ 清除高亮</button>
+      
+      <div id="status" style="margin-top: 15px; padding: 10px; background: #e9ecef; border-radius: 4px; font-size: 14px; display: none;"></div>
+    </div>
+    
+    <div class="content-panel">
+      <h2>示例内容</h2>
+      <div class="example-text" id="content">
+        <h3>关于 JavaScript</h3>
+        <p>JavaScript 是一种高级的、解释型的编程语言。JavaScript 是一门基于原型、函数先行的语言，是一门多范式的语言，它支持面向对象程序设计，命令式编程，以及函数式编程。</p>
+        
+        <p>JavaScript 最初被设计为浏览器脚本语言，用来给 HTML 网页增加动态功能。然而随着时间的推移，JavaScript 已经成为了一门通用的编程语言。</p>
+        
+        <p>现在，JavaScript 不仅可以在浏览器中运行，也可以在服务器端或其他任何搭载了 JavaScript 引擎的设备上运行。浏览器中嵌入了 JavaScript 引擎，有时也称作"JavaScript 虚拟机"。</p>
+        
+        <h3>JavaScript 的应用</h3>
+        <p>JavaScript 可以做很多事情：操作网页内容、响应用户操作、与服务器通信等等。使用 JavaScript，你可以创建交互式的网页应用。</p>
+        
+        <p>除了浏览器端，JavaScript 通过 Node.js 也可以在服务器端运行，这使得 JavaScript 成为了全栈开发的首选语言之一。</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="dist/tk-text-highlight.js"></script>
+  <script>
+    // 创建 highlighter 实例，指定要搜索的根元素
+    const highlighter = new TKTextHighlight(document.getElementById('content'));
+    
+    function showStatus(message, isError = false) {
+      const statusEl = document.getElementById('status');
+      statusEl.textContent = message;
+      statusEl.style.display = 'block';
+      statusEl.style.background = isError ? '#f8d7da' : '#d4edda';
+      statusEl.style.color = isError ? '#721c24' : '#155724';
+      
+      setTimeout(() => {
+        statusEl.style.display = 'none';
+      }, 3000);
+    }
+    
+    function doHighlight() {
+      const text = document.getElementById('searchText').value;
+      const index = parseInt(document.getElementById('searchIndex').value) || 0;
+      
+      if (!text) {
+        showStatus('请输入要搜索的文本', true);
+        return;
+      }
+      
+      // 性能测试：测量执行时间
+      const startTime = performance.now();
+      const success = highlighter.highlight(text, index);
+      const endTime = performance.now();
+      const duration = (endTime - startTime).toFixed(2);
+      
+      if (success) {
+        // 获取总匹配数
+        const totalMatches = highlighter.countMatches(text);
+        showStatus(`✅ 成功高亮第 ${index} 个匹配项（共找到 ${totalMatches} 个）- 耗时: ${duration}ms`);
+      } else {
+        showStatus(`未找到第 ${index} 个匹配项 - 耗时: ${duration}ms`, true);
+      }
+    }
+    
+    function doMark() {
+      const start = parseInt(document.getElementById('markStart').value) || 0;
+      const length = parseInt(document.getElementById('markLength').value) || 0;
+      
+      if (length <= 0) {
+        showStatus('标记长度必须大于0', true);
+        return;
+      }
+      
+      const startTime = performance.now();
+      const success = highlighter.mark({ start, length });
+      const endTime = performance.now();
+      const duration = (endTime - startTime).toFixed(2);
+      
+      if (success) {
+        showStatus(`✅ 成功标记范围 [${start}, ${start + length}) - 耗时: ${duration}ms`);
+      } else {
+        showStatus('标记失败，请先高亮文本', true);
+      }
+    }
+    
+    function doClear() {
+      highlighter.clearHighlight();
+      showStatus('已清除所有高亮');
+    }
+    
+    // 支持回车键触发搜索
+    document.getElementById('searchText').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        doHighlight();
+      }
+    });
+    
+    document.getElementById('searchIndex').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        doHighlight();
+      }
+    });
+  </script>
+</body>
+</html>
+

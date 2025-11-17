@@ -1,0 +1,10 @@
+.tk-highlight {
+  background-color: #ffeb3b;
+  transition: background-color 0.2s ease;
+}
+
+.tk-highlight-mark {
+  background-color: #ff9800;
+  font-weight: bold;
+}
+

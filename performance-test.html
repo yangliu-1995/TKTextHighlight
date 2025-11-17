@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>性能测试 - TKTextHighlight</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .test-panel {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .test-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button.secondary {
+      background: #6c757d;
+    }
+    button.success {
+      background: #28a745;
+    }
+    .results {
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      margin-top: 15px;
+    }
+    .result-item {
+      padding: 8px;
+      margin: 5px 0;
+      border-left: 4px solid #007bff;
+      background: #f8f9fa;
+    }
+    .result-item.fast {
+      border-color: #28a745;
+      background: #d4edda;
+    }
+    .result-item.slow {
+      border-color: #ffc107;
+      background: #fff3cd;
+    }
+    .content-area {
+      background: white;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .stat-box {
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚀 TKTextHighlight 性能测试</h1>
+    <p>测试优化后的高亮器在不同场景下的性能表现</p>
+  </div>
+
+  <div class="test-panel">
+    <h2>测试控制</h2>
+    <div class="test-controls">
+      <button onclick="generateSmallDoc()">生成小文档（100段）</button>
+      <button onclick="generateMediumDoc()">生成中等文档（500段）</button>
+      <button onclick="generateLargeDoc()">生成大文档（2000段）</button>
+      <button class="secondary" onclick="runPerformanceTest()">运行性能测试</button>
+      <button class="success" onclick="clearContent()">清空内容</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-value" id="nodeCount">0</div>
+        <div class="stat-label">文本节点数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="charCount">0</div>
+        <div class="stat-label">字符总数</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="matchCount">0</div>
+        <div class="stat-label">匹配数量</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="avgTime">-</div>
+        <div class="stat-label">平均耗时（ms）</div>
+      </div>
+    </div>
+
+    <div class="results" id="results" style="display: none;">
+      <h3>测试结果</h3>
+      <div id="resultsList"></div>
+    </div>
+  </div>
+
+  <div class="content-area" id="content">
+    <p>点击上方按钮生成测试文档...</p>
+  </div>
+
+  <script src="dist/tk-text-highlight.js"></script>
+  <script>
+    const highlighter = new TKTextHighlight(document.getElementById('content'));
+    const testWord = 'JavaScript';
+
+    function generateSmallDoc() {
+      generateDocument(100);
+    }
+
+    function generateMediumDoc() {
+      generateDocument(500);
+    }
+
+    function generateLargeDoc() {
+      generateDocument(2000);
+    }
+
+    function generateDocument(paragraphs) {
+      const content = document.getElementById('content');
+      content.innerHTML = '<h2>测试文档</h2>';
+      
+      const texts = [
+        `${testWord} 是一种高级的、解释型的编程语言。`,
+        `${testWord} 最初被设计为浏览器脚本语言。`,
+        `现在，${testWord} 不仅可以在浏览器中运行，也可以在服务器端运行。`,
+        `使用 ${testWord}，你可以创建交互式的网页应用。`,
+        `${testWord} 通过 Node.js 也可以在服务器端运行。`,
+        `${testWord} 是一门多范式的语言，支持面向对象程序设计。`,
+        `浏览器中嵌入了 ${testWord} 引擎，有时也称作虚拟机。`,
+        `${testWord} 已经成为了一门通用的编程语言。`
+      ];
+
+      const fragment = document.createDocumentFragment();
+      
+      for (let i = 0; i < paragraphs; i++) {
+        const p = document.createElement('p');
+        p.textContent = texts[i % texts.length] + ` (段落 ${i + 1})`;
+        fragment.appendChild(p);
+      }
+
+      content.appendChild(fragment);
+      
+      // 更新统计
+      updateStats();
+    }
+
+    function updateStats() {
+      // 计算文本节点数
+      const walker = document.createTreeWalker(
+        document.getElementById('content'),
+        NodeFilter.SHOW_TEXT,
+        null
+      );
+      let nodeCount = 0;
+      let charCount = 0;
+      while (walker.nextNode()) {
+        nodeCount++;
+        charCount += (walker.currentNode.textContent || '').length;
+      }
+
+      document.getElementById('nodeCount').textContent = nodeCount;
+      document.getElementById('charCount').textContent = charCount.toLocaleString();
+
+      // 计算匹配数
+      const matchCount = highlighter.countMatches(testWord);
+      document.getElementById('matchCount').textContent = matchCount;
+    }
+
+    function runPerformanceTest() {
+      const resultsList = document.getElementById('resultsList');
+      resultsList.innerHTML = '';
+      
+      const results = document.getElementById('results');
+      results.style.display = 'block';
+
+      const matchCount = highlighter.countMatches(testWord);
+      
+      if (matchCount === 0) {
+        resultsList.innerHTML = '<div class="result-item">请先生成测试文档</div>';
+        return;
+      }
+
+      const testCases = [
+        { index: 0, label: '第1个匹配' },
+        { index: Math.floor(matchCount / 2), label: `第${Math.floor(matchCount / 2) + 1}个匹配（中间）` },
+        { index: matchCount - 1, label: `第${matchCount}个匹配（最后）` }
+      ];
+
+      const times = [];
+
+      testCases.forEach(testCase => {
+        if (testCase.index >= matchCount) return;
+
+        // 预热
+        highlighter.highlight(testWord, testCase.index);
+        highlighter.clearHighlight();
+
+        // 正式测试（多次取平均）
+        const iterations = 10;
+        let totalTime = 0;
+
+        for (let i = 0; i < iterations; i++) {
+          const start = performance.now();
+          highlighter.highlight(testWord, testCase.index);
+          const end = performance.now();
+          totalTime += (end - start);
+          highlighter.clearHighlight();
+        }
+
+        const avgTime = totalTime / iterations;
+        times.push(avgTime);
+
+        const item = document.createElement('div');
+        item.className = 'result-item';
+        
+        if (avgTime < 1) {
+          item.className += ' fast';
+        } else if (avgTime > 10) {
+          item.className += ' slow';
+        }
+
+        item.innerHTML = `
+          <strong>${testCase.label}</strong>: 
+          <span style="color: #007bff; font-weight: bold;">${avgTime.toFixed(3)}ms</span>
+          （${iterations}次平均）
+          ${avgTime < 1 ? ' ⚡ 极快' : avgTime < 5 ? ' ✅ 快速' : avgTime < 10 ? ' ⚠️ 一般' : ' 🐌 较慢'}
+        `;
+        resultsList.appendChild(item);
+      });
+
+      // 缓存命中测试
+      const cacheStart = performance.now();
+      highlighter.countMatches(testWord);
+      const cacheEnd = performance.now();
+      const cacheTime = cacheEnd - cacheStart;
+
+      const cacheItem = document.createElement('div');
+      cacheItem.className = 'result-item fast';
+      cacheItem.innerHTML = `
+        <strong>缓存性能测试（countMatches）</strong>: 
+        <span style="color: #28a745; font-weight: bold;">${cacheTime.toFixed(3)}ms</span>
+        ${cacheTime < 1 ? ' ⚡ 缓存命中，极快！' : ' ✅ 快速'}
+      `;
+      resultsList.appendChild(cacheItem);
+
+      // 更新平均时间
+      const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
+      document.getElementById('avgTime').textContent = avgTime.toFixed(2);
+
+      // 性能评估
+      const summary = document.createElement('div');
+      summary.className = 'result-item';
+      summary.style.background = '#e7f3ff';
+      summary.style.borderColor = '#0066cc';
+      summary.innerHTML = `
+        <strong>📊 性能总结</strong><br>
+        文档规模: ${document.getElementById('nodeCount').textContent} 个文本节点<br>
+        平均查找时间: ${avgTime.toFixed(3)}ms<br>
+        性能评级: ${avgTime < 1 ? '⭐⭐⭐⭐⭐ 优秀' : avgTime < 5 ? '⭐⭐⭐⭐ 良好' : avgTime < 10 ? '⭐⭐⭐ 一般' : '⭐⭐ 需优化'}
+      `;
+      resultsList.appendChild(summary);
+    }
+
+    function clearContent() {
+      document.getElementById('content').innerHTML = '<p>点击上方按钮生成测试文档...</p>';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('nodeCount').textContent = '0';
+      document.getElementById('charCount').textContent = '0';
+      document.getElementById('matchCount').textContent = '0';
+      document.getElementById('avgTime').textContent = '-';
+      highlighter.clearHighlight();
+    }
+  </script>
+</body>
+</html>
+
